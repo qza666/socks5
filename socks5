@@ -114,14 +114,15 @@ bbr_install() {
 }
 
 install_ss5() {
+    local ip=$1  # 增加一个参数来接收 IP 地址
+    local config_path="/etc/socks/${ip}_config.yaml"
+    local service_path="/etc/systemd/system/sockd_${ip}.service"
 
-# Xray Installation
-wget -O /usr/local/bin/socks --no-check-certificate https://github.com/kangcwei/ss5/releases/download/ss5/socks
-chmod +x /usr/local/bin/socks
+    # 省略安装步骤中的 wget 和 chmod
 
-cat <<EOF > /etc/systemd/system/sockd.service
+    cat <<EOF > ${service_path}
 [Unit]
-Description=Socks Service
+Description=Socks Service for ${ip}
 After=network.target nss-lookup.target
 
 [Service]
@@ -129,7 +130,7 @@ User=nobody
 CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
 NoNewPrivileges=true
-ExecStart=/usr/local/bin/socks run -config /etc/socks/config.yaml
+ExecStart=/usr/local/bin/socks run -config ${config_path}
 Restart=on-failure
 RestartPreventExitStatus=23
 LimitNPROC=10000
@@ -139,8 +140,8 @@ LimitNOFILE=1000000
 WantedBy=multi-user.target
 EOF
 
-systemctl daemon-reload
-systemctl enable sockd.service &> /dev/null
+    systemctl daemon-reload
+    systemctl enable sockd_${ip}.service &> /dev/null
 }
 
 config_install() {
