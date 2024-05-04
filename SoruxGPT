@@ -1,10 +1,18 @@
 #!/bin/bash
 
+# 检查是否以root用户运行
+if [ "$(id -u)" != "0" ]; then
+   echo "本脚本需要以root权限运行" 1>&2
+   exit 1
+fi
+
 # 安装 Docker
-wget -qO- get.docker.com | bash && systemctl enable docker
+wget -qO- get.docker.com | bash
+systemctl enable docker
 
 # 安装 Docker-compose
-sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
+curl -L "https://github.com/docker/compose/releases/download/latest/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
 
 # 创建目录结构
 mkdir -p ~/SoruxGPT/data
@@ -49,7 +57,6 @@ LOG_LEVEL=INFO
 LOG_REDIRECT_TO_FILE=disable
 LOG_PATH=/var/log/sorux/gpt
 LOGGER_WITH_TRACE_STATE=enable
-LOGGER_WITH_TRACE_STATE=disable
 OTEL_SAMPLER=0.01
 TRACING_ENDPOINT=jaeger:4318
 BINDING_BACKEND_PORT=5700
@@ -60,4 +67,21 @@ NAME=$site_name
 DESCRIPTION=一个ChatGPT网站
 EOF
 
-echo "Setup complete! Your domain is set to $user_domain and site name is $site_name."
+docker-compose up -d
+
+cd ~
+apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+curl -sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list
+apt update
+apt install -y caddy
+
+# 编辑 Caddyfile
+echo "$user_domain {
+    reverse_proxy localhost:5700
+}" > /etc/caddy/Caddyfile
+
+# 重启 Caddy 以应用配置
+systemctl restart caddy
+
+echo "SoruxGPT面板安装完成，你的域名是：$user_domain 当前站点的名称是 $site_name."
