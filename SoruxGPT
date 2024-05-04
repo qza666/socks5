@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# 安装 Docker
+wget -qO- get.docker.com | bash && systemctl enable docker
+
+# 安装 Docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
+
+# 创建目录结构
+mkdir -p ~/SoruxGPT/data
+cd ~/SoruxGPT
+
+# 写入 docker-compose.yml
+cat <<EOF >docker-compose.yml
+version: "3.3"
+services:
+  redis:
+    container_name: "SoruxGPT-Redis"
+    image: redis
+    restart: unless-stopped
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+  jaeger:
+    container_name: "SoruxGPT-Jaeger"
+    image: jaegertracing/all-in-one
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+  sorux-gpt:
+    container_name: "SoruxGPT"
+    image: "epicmo/soruxgpt_business:latest"
+    ports:
+      - "5700:8080"
+    env_file:
+      - .env.docker.compose
+    volumes:
+      - "./data:/sorux/gpt/data"
+EOF
+
+# 提示用户输入域名和网站名称
+read -p "请输入您的域名: " user_domain
+read -p "请输入您的网站名称: " site_name
+
+# 写入环境配置文件 .env.docker.compose
+cat <<EOF >.env.docker.compose
+LOG_LEVEL=INFO
+LOG_REDIRECT_TO_FILE=disable
+LOG_PATH=/var/log/sorux/gpt
+LOGGER_WITH_TRACE_STATE=enable
+LOGGER_WITH_TRACE_STATE=disable
+OTEL_SAMPLER=0.01
+TRACING_ENDPOINT=jaeger:4318
+BINDING_BACKEND_PORT=5700
+REDIS_ADDR=redis:6379
+LICENSE="Nu9+sEBofIgmsSKhrloN8w=="
+BUSINESS_DOMAIN=$user_domain
+NAME=$site_name
+DESCRIPTION=一个ChatGPT网站
+EOF
+
+echo "Setup complete! Your domain is set to $user_domain and site name is $site_name."
