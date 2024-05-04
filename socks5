@@ -10,7 +10,7 @@ RedBG="\033[41;37m"
 Font="\033[0m"
 
 # IP 表定义
-declare -a IP_TABLE=("192.168.1.1" "192.168.1.2" "192.168.1.3") # Extend this list with your IPs
+declare -a IP_TABLE=("137.220.171.40" "137.220.171.60") # Extend this list with your IPs
 
 # 检查系统类型和版本
 source '/etc/os-release'
