@@ -64,7 +64,7 @@ REDIS_ADDR=redis:6379
 LICENSE="Nu9+sEBofIgmsSKhrloN8w=="
 BUSINESS_DOMAIN=$user_domain
 NAME=$site_name
-DESCRIPTION=一个ChatGPT网站
+DESCRIPTION=开通ChatGPT4.0无限使用权限请联系作者飞机：@qza1234
 EOF
 
 docker-compose up -d
