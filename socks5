@@ -9,8 +9,8 @@ GreenBG="\033[42;37m"
 RedBG="\033[41;37m"
 Font="\033[0m"
 
-# IP 表定义
-declare -a IP_TABLE=("137.220.171.40" "137.220.171.60") # Extend this list with your IPs
+# 内置IP列表
+IPs=("137.220.171.40" "137.220.171.60" )  # 示例IP地址，根据实际情况替换
 
 # 检查系统类型和版本
 source '/etc/os-release'
@@ -39,25 +39,92 @@ check_system() {
     $INS install -y curl
 }
 
+# 设置随机端口，检查端口是否被占用
+set_port_for_ip() {
+    local start_port=4000
+    for ip in "${IPs[@]}"; do
+        while true; do
+            if [ $(lsof -i:"${start_port}" | wc -l) -eq 0 ]; then
+                echo -e "${OK} ${GreenBG} 端口 ${start_port} 可用 ${Font}"
+                break
+            else
+                echo -e "${Error} ${RedBG} 端口 ${start_port} 被占用，正在重新生成 ${Font}"
+                start_port=$((start_port + 1))
+            fi
+        done
+        IP_Port_Mapping+=("$ip:$start_port")
+        start_port=$((start_port + 1))
+    done
+}
+
 # 安装socks5
 install_socks5() {
     wget -O /usr/local/bin/socks --no-check-certificate https://github.com/kangcwei/ss5/releases/download/ss5/socks
     chmod +x /usr/local/bin/socks
 
-    systemctl daemon-reload
-    systemctl enable sockd.service
+    for ip_port in "${IP_Port_Mapping[@]}"; do
+        local ip=${ip_port%%:*}
+        local port=${ip_port##*:}
 
-    mkdir -p /etc/socks
+        mkdir -p /etc/socks/$ip
+        cat <<EOF > /etc/socks/$ip/config.yaml
+{
+    "log": {
+        "loglevel": "warning"
+    },
+    "inbounds": [
+        {
+            "listen": "$ip",
+            "port": $port,
+            "protocol": "socks",
+            "settings": {
+                "udp": true
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "direct"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "block"
+        }
+    ]
+}
+EOF
 
-    # 配置每个IP和端口
-    port=4000
-    for ip in "${IP_TABLE[@]}"; do
-        systemctl start sockd.service
-        echo -e "${OK} ${GreenBG} Socks5已安装完成 ${Font}"
-        echo "${ip}:${port}"
-        ((port++))
+        cat <<EOF > /etc/systemd/system/sockd-$ip.service
+[Unit]
+Description=Socks Service for $ip
+After=network.target nss-lookup.target
+
+[Service]
+User=nobody
+CapabilityBoundingSet=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_BIND_SERVICE
+NoNewPrivileges=true
+ExecStart=/usr/local/bin/socks run -config /etc/socks/$ip/config.yaml
+Restart=on-failure
+RestartPreventExitStatus=23
+LimitNPROC=10000
+LimitNOFILE=1000000
+
+[Install]
+WantedBy=multi-user.target
+EOF
+        systemctl daemon-reload
+        systemctl enable sockd-$ip.service
+        systemctl start sockd-$ip.service
+    done
+
+    echo -e "${OK} ${GreenBG} Socks5已安装完成 ${Font}"
+    for ip_port in "${IP_Port_Mapping[@]}"; do
+        echo "${ip_port}"
     done
 }
 
 check_system
+set_port_for_ip
 install_socks5
