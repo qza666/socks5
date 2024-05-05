@@ -1,19 +1,7 @@
 #!/bin/sh
 
-echo "请输入验证码密码:"
-read -s captcha
-
-if [ "$captcha" != "789" ]; then
-    echo "验证码密码错误！"
-    exit 1
-fi
-
 echo "请输入socks端口:"
 read socks_port
-echo "请输入socks用户名:"
-read socks_user
-echo "请输入socks密码:"
-read socks_pass
 
 # 以下是原始代码，没有进行修改
 iptables -P INPUT ACCEPT
@@ -59,13 +47,9 @@ protocol = "socks"
 tag = "$((i+1))"
 
 [inbounds.settings]
-auth = "password"
+auth = "noauth"
 udp = true
 ip = "${ips[i]}"
-
-[[inbounds.settings.accounts]]
-user = "$socks_user"
-pass = "$socks_pass"
 
 [[routing.rules]]
 type = "field"
@@ -101,7 +85,5 @@ trap cleanup EXIT
 
 # 显示完成信息
 echo "====================================="
-echo "  "
 echo "==>已安装完毕，赶紧去测试一下!  "
-echo "  "
 echo "====================================="
