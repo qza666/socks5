@@ -8,7 +8,7 @@ sudo apt install -y dante-server
 base_port=1080
 
 # 定义你的IP地址列表
-declare -a ips=("192.168.1.1" "192.168.1.2" "192.168.1.3")
+declare -a ips=("137.220.171.40" "137.220.171.60" "137.220.171.75")
 
 # 循环遍历每个IP并设置 SOCKS5 代理
 for ip in "${ips[@]}"
