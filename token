@@ -4,7 +4,7 @@
 cd /root/SoruxNode/chat-$(read -p "请输入节点ID: " node_id && echo $node_id)
 
 # 删除配置文件
-rm /config/session.json
+rm config/session.json
 
 # 停止并删除当前的docker-compose服务
 docker-compose stop
@@ -13,7 +13,7 @@ docker-compose rm -f
 # 创建新的session.json文件
 echo "请输入refreshCookie: "
 read refreshCookie
-cat > /config/session.json << EOF
+cat > config/session.json << EOF
 {
   "refreshCookie": "$refreshCookie"
 }
