@@ -3,8 +3,6 @@
 # 定义一个包含每个节点 refreshCookie 的数组
 refreshCookies=("cookie1" "cookie2" "cookie3" "cookie4" "cookie5" "cookie6" "cookie7" "cookie8" "cookie9")
 
-while true
-do
     for node_id in {1..9}
     do
         # 从数组中获取对应节点的 refreshCookie
@@ -32,6 +30,6 @@ EOF
         docker-compose up -d
     done
 
-    # 等待5分钟
-    sleep 300
-done
+
+
+
