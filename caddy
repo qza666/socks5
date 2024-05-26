@@ -14,7 +14,7 @@ sudo apt install -y caddy
 
 # Create Caddyfile with reverse proxy configuration
 cat <<EOF | sudo tee /etc/caddy/Caddyfile
-$domain_name {
+papago.00web.xyz {
     reverse_proxy https://papago.naver.com
 }
 EOF
