@@ -3,7 +3,7 @@
 echo "请输入socks端口:"
 read socks_port
 
-# 以下是原始代码，没有进行修改
+# 清空iptables规则
 iptables -P INPUT ACCEPT
 iptables -P FORWARD ACCEPT
 iptables -P OUTPUT ACCEPT
@@ -12,12 +12,16 @@ iptables -t mangle -F
 iptables -F
 iptables -X
 iptables-save
-ips=(
-$(hostname -I)
-)
-# Xray Installation
-wget -O /usr/local/bin/xray https://raw.githubusercontent.com/qza666/socks5/main/xray
+
+# 获取本机IP地址列表
+ips=($(hostname -I))
+
+# Xray安装与设置
+wget -O /usr/local/bin/xray.zip https://github.com/qza666/socks5/raw/main/Xray-linux-64.zip
+unzip /usr/local/bin/xray.zip -d /usr/local/bin/
 chmod +x /usr/local/bin/xray
+
+# 创建systemd服务文件
 cat <<EOF > /etc/systemd/system/xray.service
 [Unit]
 Description=The Xray Proxy Serve
@@ -32,10 +36,12 @@ RestartSec=15s
 [Install]
 WantedBy=multi-user.target
 EOF
+
+# 启用并重新加载systemd守护进程
 systemctl daemon-reload
 systemctl enable xray
 
-# Xray Configuration
+# 创建配置目录和文件
 mkdir -p /etc/xray
 echo -n "" > /etc/xray/serve.toml
 for ((i = 0; i < ${#ips[@]}; i++)); do
@@ -63,18 +69,20 @@ tag = "$((i+1))"
 EOF
 done
 
-# 设置防火墙
-firewall-cmd --zone=public --add-port=$socks_port/tcp --add-port=$socks_port/udp --permanent && firewall-cmd --reload
+# 设置并重新加载防火墙
+firewall-cmd --zone=public --add-port=$socks_port/tcp --add-port=$socks_port/udp --permanent
+firewall-cmd --reload
 
+# 停止并启动Xray服务
 systemctl stop xray
 systemctl start xray
 
-# 显示本机所有IP地址
+# 显示本机所有IP地址并保存到文件
 filename=$(hostname -I | awk '{print $1}').txt
 echo "$(date '+%Y-%m-%d')" > $filename
 hostname -I | tr ' ' '\n' >> $filename 
 
-# 重启xray
+# 重启xray服务
 systemctl restart xray
 
 # 删除安装脚本
@@ -85,5 +93,5 @@ trap cleanup EXIT
 
 # 显示完成信息
 echo "====================================="
-echo "==>已安装完毕，赶紧去测试一下!  "
+echo "==>已安装完毕，赶紧去测试一下!"
 echo "====================================="
