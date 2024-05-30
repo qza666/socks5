@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# 确保安装了wget和unzip
+sudo yum install wget unzip -y
+
 echo "请输入socks端口:"
 read socks_port
 
